@@ -1,5 +1,9 @@
 # Real-Valued Functions Explorer
 
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
+![GUI](https://img.shields.io/badge/GUI-Tkinter-lightgrey)
+![Math](https://img.shields.io/badge/Math-Matplotlib%20%7C%20SciPy-orange)
 A powerful, interactive Python desktop application for visualizing and analyzing mathematical functions in both two and three dimensions. Built with `tkinter` and `matplotlib`, this tool serves as an interactive sandbox for students, educators, and mathematics enthusiasts exploring multivariable calculus, geometry, and real-valued functions.
 
 ## Features
