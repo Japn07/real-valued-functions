@@ -1,0 +1,120 @@
+================================================================================
+CHANGELOG — Real-Valued Functions Applet
+================================================================================
+
+──────────────────────────────────────────────────────────────────────────────
+2026-05-13  Feature Updates (v1.2.0)
+──────────────────────────────────────────────────────────────────────────────
+
+[NEW/MOD] math_engine.py
+  - Added parse_domain_value to allow constants like 'pi', 'e' and functions in domain inputs
+  - Updated find_critical_points to minimize squared gradient norm, reliably finding saddle points
+
+[NEW/MOD] tabs/surface_tab.py
+  - Added "Reset" button to clear state
+  - Domain inputs now accept math constants and expressions
+
+[NEW/MOD] tabs/level_surface_tab.py
+  - Refactored to support plotting multiple simultaneous surfaces via Add/Remove listbox
+  - Added "Reset" button to clear state
+  - Domain inputs now accept math constants and expressions
+
+[NEW/MOD] tabs/analysis_tab.py
+  - Added "Reset" button to clear state
+  - Domain, point, and direction inputs now accept math constants and expressions
+
+──────────────────────────────────────────────────────────────────────────────
+2026-04-17  Feature Updates (v1.1.0)
+──────────────────────────────────────────────────────────────────────────────
+
+[NEW] math_engine.py
+  - Added parse_implicit_function helper to detect '=' in expressions and rewrite L - R
+
+[NEW] main.py & App Logo
+  - Generated and bundled new app logo ('logo.png') and set as root.iconphoto
+  - NOTE: To change the app logo, replace "logo.png" in the app root directory.
+
+[NEW/MOD] tabs/surface_tab.py
+  - Implicit function support (draws 2D contour on the zero level instead of 3D surface)
+  - Synced numeric entries for precise x₀ and y₀ cross-section slicing points
+  - Unit-vector slicing "Slice along û" via 2D parametric line sampling
+
+[NEW/MOD] tabs/level_surface_tab.py
+  - Implicit function support (auto-sets c=0)
+  - Synced numeric entry for precise axis-aligned slice position
+  - Unit-vector arbitrary plane slicing "Slice along û" via Gram-Schmidt basis construction
+
+[NEW/MOD] tabs/analysis_tab.py
+  - Implicit curve overlays (draws zero-level curve of implicit equations in red)
+
+──────────────────────────────────────────────────────────────────────────────
+2026-04-14  UI Fix (v1.0.1)
+──────────────────────────────────────────────────────────────────────────────
+
+[FIX] tabs/surface_tab.py, tabs/level_surface_tab.py, tabs/analysis_tab.py
+  - Moved Plot/Analyze button from inside the scrollable controls area to a
+    fixed position at the top of the left panel (always visible)
+  - Added auto-plot when a function is added via the "Add" button
+  - Initialised _hover_data to prevent AttributeError on early hover
+
+──────────────────────────────────────────────────────────────────────────────
+2026-04-14  Initial Release (v1.0)
+──────────────────────────────────────────────────────────────────────────────
+
+[NEW] math_engine.py
+  - Safe expression parser with restricted namespace (sin, cos, tan, arcsin,
+    arccos, arctan, sinh, cosh, tanh, sqrt, ln, log, exp, abs, pi, e)
+  - Domain-aware evaluation: division by zero → NaN, complex results → NaN,
+    negative logarithm arguments → NaN
+  - Numerical gradient via central finite differences
+  - Numerical Hessian matrix computation
+  - Directional derivative D_u f
+  - Critical-point detection via scipy.optimize with second-derivative-test
+    classification (local min / local max / saddle / inconclusive)
+
+[NEW] tabs/__init__.py
+  - Empty init for the tabs package
+
+[NEW] tabs/surface_tab.py
+  - Tab 1: f(x,y) Visualizer
+  - Surface plot (3D), filled contour (level curves), contour lines, combined
+    (2×2 grid) plot modes
+  - Multiple simultaneous functions via Add/Remove/Update listbox
+  - Adjustable x/y ranges and grid resolution
+  - Cross-section slicing along x or y axis with interactive sliders
+  - Colormap selector (viridis, plasma, inferno, coolwarm, RdYlBu, Spectral)
+  - Hover readout showing f(x,y) at cursor position
+
+[NEW] tabs/level_surface_tab.py
+  - Tab 2: f(x,y,z) Level Surfaces
+  - Isosurface rendering f(x,y,z) = c using scikit-image marching cubes
+  - Adjustable level value (c), x/y/z domain ranges, and resolution
+  - Axis-aligned cross-section slicing (x, y, or z) with slider
+  - 2D filled contour of the slice with level-contour overlay
+  - Colormap selector
+
+[NEW] tabs/analysis_tab.py
+  - Tab 3: Calculus Analysis
+  - Gradient vector field overlay (quiver plot, normalized arrows)
+  - Gradient at a specified point (x₀, y₀) with highlighted arrow and label
+  - Directional derivative in a user-specified direction (dx, dy) or angle θ°
+  - Critical-point detection and classification with marker overlays:
+      ● green circle  = local minimum
+      ▲ red triangle  = local maximum
+      ◆ yellow diamond = saddle point
+  - Info panel showing ∇f, |∇f|, D_u f, and critical point list
+  - Contour background with colormap selector
+
+[NEW] main.py
+  - Tkinter entry point with ttk.Notebook (3 tabs)
+  - Window: "Real-Valued Functions Applet", 1400×900
+  - Uses 'clam' theme with Segoe UI bold tab labels
+
+[NEW] build.py
+  - PyInstaller build script producing a single-file windowed executable
+  - Hidden imports: numpy, matplotlib, scipy, skimage
+
+NOTES:
+  - PyTorch was planned for differentiation but is incompatible with
+    Python 3.14; all differentiation uses NumPy central finite differences.
+  - scikit-image ≥ 0.26 is required for marching cubes (already installed).

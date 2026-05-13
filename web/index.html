@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Valued Functions Applet</title>
+
+    <!-- Plotly & Math.js -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
+
+    <style>
+        :root[data-theme="dark"] {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --panel-border: #333333;
+            --text-color: #dcdcdc;
+            --text-muted: #888888;
+            --input-bg: #2d2d2d;
+            --input-border: #444444;
+            --btn-bg: #2d2d2d;
+            --btn-hover: #3d3d3d;
+            --btn-active: #007acc;
+            --btn-active-text: #ffffff;
+            --accent: #007acc;
+            --danger: #d9534f;
+            --plotly-bg: #121212;
+            --plotly-font: #dcdcdc;
+            --plotly-grid: #333333;
+        }
+
+        :root[data-theme="light"] {
+            --bg-color: #f5f5f5;
+            --panel-bg: #ffffff;
+            --panel-border: #dddddd;
+            --text-color: #333333;
+            --text-muted: #666666;
+            --input-bg: #ffffff;
+            --input-border: #cccccc;
+            --btn-bg: #e0e0e0;
+            --btn-hover: #d0d0d0;
+            --btn-active: #007acc;
+            --btn-active-text: #ffffff;
+            --accent: #007acc;
+            --danger: #d9534f;
+            --plotly-bg: #f5f5f5;
+            --plotly-font: #333333;
+            --plotly-grid: #dddddd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Layout */
+        #sidebar {
+            width: 360px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            z-index: 100;
+        }
+
+        #main-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background-color: var(--bg-color);
+        }
+
+        /* Header */
+        .header {
+            padding: 16px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .theme-toggle {
+            cursor: pointer;
+            background: var(--btn-bg);
+            border: 1px solid var(--panel-border);
+            color: var(--text-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        /* Top Action Bar (Plot/Analyze Button) */
+        .action-bar {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--panel-border);
+            background: var(--panel-bg);
+        }
+
+        .primary-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .primary-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--panel-border);
+            background: var(--panel-bg);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-color);
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+        }
+
+        /* Controls Scroll Area */
+        .controls-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Controls Elements */
+        .control-group {
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        .control-group h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .row:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            font-size: 13px;
+            width: 80px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            flex: 1;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-color);
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            min-width: 0;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .btn-group button {
+            flex: 1;
+            background: var(--btn-bg);
+            border: 1px solid var(--panel-border);
+            color: var(--text-color);
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-group button:hover {
+            background: var(--btn-hover);
+        }
+
+        /* Listbox */
+        .listbox {
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            border-radius: 4px;
+            height: 100px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+        }
+
+        .list-item {
+            padding: 6px 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .list-item:hover {
+            background: var(--btn-hover);
+        }
+
+        .list-item.selected {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Checkbox & Radios */
+        .radio-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+        }
+
+        .radio-item label {
+            width: auto;
+            font-family: inherit;
+        }
+
+        /* Plotly Area */
+        #plot-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Info Panel Tab 3 */
+        #info-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 50;
+        }
+
+        #info-panel pre {
+            white-space: pre-wrap;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        /* Value Span */
+        .val-span {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            min-width: 32px;
+            text-align: right;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <div class="header">
+            <h1>Math Visualizer</h1>
+            <button class="theme-toggle" id="theme-btn">☀️ Light</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="tab1">1. f(x,y)</button>
+            <button class="tab-btn" data-tab="tab2">2. f(x,y,z)</button>
+            <button class="tab-btn" data-tab="tab3">3. Analysis</button>
+        </div>
+
+        <div class="action-bar">
+            <button class="primary-btn" id="btn-plot">⟳ Plot</button>
+        </div>
+
+        <div class="controls-scroll">
+
+            <!-- TAB 1: f(x,y) Visualizer -->
+            <div id="tab1" class="tab-content active">
+                <div class="control-group">
+                    <h3>Function f(x, y)</h3>
+                    <div class="row">
+                        <label>f(x,y) =</label>
+                        <input type="text" id="t1-expr" value="sin(sqrt(x^2 + y^2))">
+                    </div>
+                    <div class="btn-group">
+                        <button id="t1-add">Add</button>
+                        <button id="t1-remove">Remove</button>
+                        <button id="t1-update">Update</button>
+                    </div>
+                    <div class="listbox" id="t1-list"></div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Domain & Options</h3>
+                    <div class="radio-grid mb">
+                        <div class="row"><label>x min</label><input type="number" id="t1-xmin" value="-10"></div>
+                        <div class="row"><label>x max</label><input type="number" id="t1-xmax" value="10"></div>
+                        <div class="row"><label>y min</label><input type="number" id="t1-ymin" value="-10"></div>
+                        <div class="row"><label>y max</label><input type="number" id="t1-ymax" value="10"></div>
+                    </div>
+
+                    <div class="row" style="margin-top: 12px;">
+                        <label>Resolution</label>
+                        <input type="range" id="t1-res" min="20" max="150" value="70">
+                        <span class="val-span" id="t1-res-val">70</span>
+                    </div>
+
+                    <div class="row">
+                        <label>Plot Type</label>
+                        <select id="t1-ptype">
+                            <option value="surface">Surface Plot</option>
+                            <option value="contourf">Filled Contour</option>
+                            <option value="contour">Contour Lines</option>
+                            <option value="combined">Combined (2x2)</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <label>Colormap</label>
+                        <select id="t1-cmap">
+                            <option value="Viridis">Viridis</option>
+                            <option value="Plasma">Plasma</option>
+                            <option value="Inferno">Inferno</option>
+                            <option value="RdBu">Coolwarm (RdBu)</option>
+                            <option value="Spectral">Spectral</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Slice Controls</h3>
+                    <div class="radio-grid mb" style="margin-bottom: 12px;">
+                        <div class="radio-item"><input type="radio" name="t1-slice" value="none" checked id="s-none">
+                            <label for="s-none">None</label>
+                        </div>
+                        <div class="radio-item"><input type="radio" name="t1-slice" value="x" id="s-x"> <label
+                                for="s-x">Slice x</label></div>
+                        <div class="radio-item"><input type="radio" name="t1-slice" value="y" id="s-y"> <label
+                                for="s-y">Slice y</label></div>
+                        <div class="radio-item"><input type="radio" name="t1-slice" value="vec" id="s-vec"> <label
+                                for="s-vec">Slice û</label></div>
+                    </div>
+
+                    <div id="t1-slice-xy" style="display: none;">
+                        <div class="row">
+                            <label>Position</label>
+                            <input type="number" id="t1-spos-in" style="width: 50px; flex:none;">
+                            <input type="range" id="t1-spos" min="-10" max="10" step="0.1" value="0">
+                        </div>
+                    </div>
+
+                    <div id="t1-slice-vec" style="display: none;">
+                        <div class="row">
+                            <label>Dir (a,b)</label>
+                            <input type="number" id="t1-ua" value="1" step="0.1">
+                            <input type="number" id="t1-ub" value="1" step="0.1">
+                        </div>
+                        <div class="row">
+                            <label>Origin</label>
+                            <input type="number" id="t1-p1" value="0" step="0.1">
+                            <input type="number" id="t1-p2" value="0" step="0.1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: f(x,y,z) Level Surface -->
+            <div id="tab2" class="tab-content">
+                <div class="control-group">
+                    <h3>Function f(x,y,z)</h3>
+                    <div class="row">
+                        <label>f(x,y,z) =</label>
+                        <input type="text" id="t2-expr" value="x^2 + y^2 - z^2">
+                    </div>
+                    <div class="row">
+                        <label>Level (c)</label>
+                        <input type="number" id="t2-level" value="1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Domain & Options</h3>
+                    <div class="radio-grid mb">
+                        <div class="row"><label>x min</label><input type="number" id="t2-xmin" value="-3"></div>
+                        <div class="row"><label>x max</label><input type="number" id="t2-xmax" value="3"></div>
+                        <div class="row"><label>y min</label><input type="number" id="t2-ymin" value="-3"></div>
+                        <div class="row"><label>y max</label><input type="number" id="t2-ymax" value="3"></div>
+                        <div class="row"><label>z min</label><input type="number" id="t2-zmin" value="-3"></div>
+                        <div class="row"><label>z max</label><input type="number" id="t2-zmax" value="3"></div>
+                    </div>
+
+                    <div class="row" style="margin-top: 12px;">
+                        <label>Resolution</label>
+                        <input type="range" id="t2-res" min="15" max="80" value="40">
+                        <span class="val-span" id="t2-res-val">40</span>
+                    </div>
+
+                    <div class="row">
+                        <label>Colormap</label>
+                        <select id="t2-cmap">
+                            <option value="Viridis">Viridis</option>
+                            <option value="Plasma">Plasma</option>
+                            <option value="RdBu">Coolwarm (RdBu)</option>
+                            <option value="Spectral">Spectral</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Slice Axis</h3>
+                    <div class="radio-grid mb" style="margin-bottom: 12px;">
+                        <div class="radio-item"><input type="radio" name="t2-slice" value="none" checked id="s2-none">
+                            <label for="s2-none">None</label>
+                        </div>
+                        <div class="radio-item"><input type="radio" name="t2-slice" value="x" id="s2-x"> <label
+                                for="s2-x">Slice x</label></div>
+                        <div class="radio-item"><input type="radio" name="t2-slice" value="y" id="s2-y"> <label
+                                for="s2-y">Slice y</label></div>
+                        <div class="radio-item"><input type="radio" name="t2-slice" value="z" id="s2-z"> <label
+                                for="s2-z">Slice z</label></div>
+                        <div class="radio-item"><input type="radio" name="t2-slice" value="vec" id="s2-vec"> <label
+                                for="s2-vec">Slice û</label></div>
+                    </div>
+
+                    <div id="t2-slice-pos" style="display: none;">
+                        <div class="row">
+                            <label>Position</label>
+                            <input type="number" id="t2-spos-in" style="width: 50px; flex:none;">
+                            <input type="range" id="t2-spos" min="-3" max="3" step="0.1" value="0">
+                        </div>
+                    </div>
+
+                    <div id="t2-slice-vec" style="display: none;">
+                        <div class="row">
+                            <label>Dir (a,b,c)</label>
+                            <input type="number" id="t2-ua" value="1" step="0.1">
+                            <input type="number" id="t2-ub" value="1" step="0.1">
+                            <input type="number" id="t2-uc" value="1" step="0.1">
+                        </div>
+                        <div class="row">
+                            <label>Origin</label>
+                            <input type="number" id="t2-p1" value="0" step="0.1">
+                            <input type="number" id="t2-p2" value="0" step="0.1">
+                            <input type="number" id="t2-p3" value="0" step="0.1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Analysis -->
+            <div id="tab3" class="tab-content">
+                <div class="control-group">
+                    <h3>Function f(x, y)</h3>
+                    <div class="row">
+                        <label>f(x,y) =</label>
+                        <input type="text" id="t3-expr" value="x^2 - y^2">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Evaluation Point</h3>
+                    <div class="row">
+                        <label>x₀</label><input type="number" id="t3-x0" value="1" step="0.1">
+                        <label style="width: auto;">y₀</label><input type="number" id="t3-y0" value="1" step="0.1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Direction (dx, dy)</h3>
+                    <div class="row">
+                        <label>dx</label><input type="number" id="t3-dx" value="1" step="0.1">
+                        <label style="width: auto;">dy</label><input type="number" id="t3-dy" value="0" step="0.1">
+                    </div>
+                    <div class="row">
+                        <label>or angle θ°</label>
+                        <input type="number" id="t3-ang" placeholder="e.g. 45">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Domain</h3>
+                    <div class="radio-grid">
+                        <div class="row"><label>x min</label><input type="number" id="t3-xmin" value="-5"></div>
+                        <div class="row"><label>x max</label><input type="number" id="t3-xmax" value="5"></div>
+                        <div class="row"><label>y min</label><input type="number" id="t3-ymin" value="-5"></div>
+                        <div class="row"><label>y max</label><input type="number" id="t3-ymax" value="5"></div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Display Options</h3>
+                    <div class="radio-item" style="margin-bottom:6px;"><input type="checkbox" id="t3-show-field"
+                            checked> <label>Gradient Field (Quiver)</label></div>
+                    <div class="radio-item" style="margin-bottom:6px;"><input type="checkbox" id="t3-show-grad" checked>
+                        <label>Gradient at Point (x₀,y₀)</label>
+                    </div>
+                    <div class="radio-item" style="margin-bottom:6px;"><input type="checkbox" id="t3-show-crit" checked>
+                        <label>Critical Points</label>
+                    </div>
+
+                    <div class="row" style="margin-top: 12px;">
+                        <label>Colormap</label>
+                        <select id="t3-cmap">
+                            <option value="RdBu">Coolwarm (RdBu)</option>
+                            <option value="Viridis">Viridis</option>
+                            <option value="Plasma">Plasma</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <div id="main-view">
+        <div id="plot-container"></div>
+        <div id="info-panel">
+            <pre id="info-text"></pre>
+        </div>
+    </div>
+
+    <!-- SCRIPTS START -->
+    <script>
+        const SAFE_SCOPE = {
+            sin: Math.sin, cos: Math.cos, tan: Math.tan,
+            asin: Math.asin, acos: Math.acos, atan: Math.atan,
+            sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh,
+            exp: Math.exp, sqrt: Math.sqrt, abs: Math.abs,
+            log: Math.log, ln: Math.log, log10: Math.log10,
+            pi: Math.PI, e: Math.E
+        };
+
+        class MathEngine {
+            constructor() { }
+
+            parseImplicitFunction(exprStr) {
+                let compiled = null;
+                let isImplicit = false;
+                if (exprStr.includes('=')) {
+                    let parts = exprStr.split('=');
+                    let lhs = parts[0].trim();
+                    let rhs = parts[1].trim();
+                    if (!rhs || rhs === '0') exprStr = lhs;
+                    else if (!lhs || lhs === '0') exprStr = `-(${rhs})`;
+                    else exprStr = `(${lhs}) - (${rhs})`;
+                    isImplicit = true;
+                }
+                try {
+                    compiled = math.compile(exprStr);
+                } catch (e) {
+                    console.error("Math parse error:", e);
+                    throw e;
+                }
+
+                let func = (scope) => {
+                    try {
+                        let v = compiled.evaluate(Object.assign({}, SAFE_SCOPE, scope));
+                        if (v && v.re !== undefined) {
+                            if (v.im !== 0) return NaN;
+                            return v.re;
+                        }
+                        if (!isFinite(v)) return NaN;
+                        return v;
+                    } catch (e) { return NaN; }
+                };
+                return { func, isImplicit };
+            }
+
+            numericalGradientScalar(func, x0, y0, h = 1e-5) {
+                let dfdx = (func({ x: x0 + h, y: y0 }) - func({ x: x0 - h, y: y0 })) / (2 * h);
+                let dfdy = (func({ x: x0, y: y0 + h }) - func({ x: x0, y: y0 - h })) / (2 * h);
+                return [dfdx, dfdy];
+            }
+
+            directionalDerivative(func, x0, y0, dx, dy) {
+                let grad = this.numericalGradientScalar(func, x0, y0);
+                let mag = Math.hypot(dx, dy) || 1;
+                return grad[0] * (dx / mag) + grad[1] * (dy / mag);
+            }
+
+            numericalHessian(func, x0, y0, h = 1e-4) {
+                let f00 = func({ x: x0, y: y0 });
+                let fxx = (func({ x: x0 + h, y: y0 }) - 2 * f00 + func({ x: x0 - h, y: y0 })) / (h * h);
+                let fyy = (func({ x: x0, y: y0 + h }) - 2 * f00 + func({ x: x0, y: y0 - h })) / (h * h);
+                let fxy = (func({ x: x0 + h, y: y0 + h }) - func({ x: x0 + h, y: y0 - h }) - func({ x: x0 - h, y: y0 + h }) + func({ x: x0 - h, y: y0 - h })) / (4 * h * h);
+                return [[fxx, fxy], [fxy, fyy]];
+            }
+
+            classifyCriticalPoint(func, x0, y0) {
+                let H = this.numericalHessian(func, x0, y0);
+                let det = H[0][0] * H[1][1] - H[0][1] * H[1][0];
+                let tr = H[0][0] + H[1][1];
+                if (det > 0) return (tr > 0) ? 'local_min' : 'local_max';
+                if (det < 0) return 'saddle';
+                return 'inconclusive';
+            }
+
+            findCriticalPoints(func, xmin, xmax, ymin, ymax, res = 30) {
+                let points = [];
+                let dx = (xmax - xmin) / (res - 1);
+                let dy = (ymax - ymin) / (res - 1);
+                let seen = new Set();
+
+                for (let i = 0; i < res; i++) {
+                    for (let j = 0; j < res; j++) {
+                        let x = xmin + i * dx;
+                        let y = ymin + j * dy;
+
+                        for (let sign of [1, -1]) {
+                            let cx = x, cy = y;
+                            let lr = 0.05, iters = 0;
+                            while (iters < 50) {
+                                let g = this.numericalGradientScalar(func, cx, cy);
+                                let gmag = Math.hypot(g[0], g[1]);
+                                if (gmag < 1e-4) {
+                                    let kX = Math.round(cx * 100) / 100;
+                                    let kY = Math.round(cy * 100) / 100;
+                                    let key = `${kX},${kY}`;
+                                    if (!seen.has(key) && cx >= xmin && cx <= xmax && cy >= ymin && cy <= ymax) {
+                                        seen.add(key);
+                                        let type = this.classifyCriticalPoint(func, kX, kY);
+                                        points.push({ x: kX, y: kY, z: func({ x: kX, y: kY }), type });
+                                    }
+                                    break;
+                                }
+                                if (gmag > 100) break;
+                                cx -= sign * lr * g[0];
+                                cy -= sign * lr * g[1];
+                                iters++;
+                            }
+                        }
+                    }
+                }
+                return points;
+            }
+        }
+
+        class App {
+            constructor() {
+                this.engine = new MathEngine();
+                this.tab1Functions = [];
+                this.activeTab = 'tab1';
+                this.plotLayout = {
+                    margin: { l: 40, r: 40, t: 50, b: 40 },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: getComputedStyle(document.body).getPropertyValue('--plotly-font') },
+                    scene: {
+                        xaxis: { gridcolor: getComputedStyle(document.body).getPropertyValue('--plotly-grid') },
+                        yaxis: { gridcolor: getComputedStyle(document.body).getPropertyValue('--plotly-grid') },
+                        zaxis: { gridcolor: getComputedStyle(document.body).getPropertyValue('--plotly-grid') }
+                    }
+                };
+                this.bindUI();
+                this.addTab1Function();
+            }
+
+            bindUI() {
+                document.getElementById('theme-btn').addEventListener('click', (e) => {
+                    let html = document.documentElement;
+                    if (html.getAttribute('data-theme') === 'dark') {
+                        html.setAttribute('data-theme', 'light');
+                        e.target.innerText = '🌙 Dark';
+                    } else {
+                        html.setAttribute('data-theme', 'dark');
+                        e.target.innerText = '☀️ Light';
+                    }
+                    this.plotLayout.font.color = getComputedStyle(document.body).getPropertyValue('--plotly-font');
+                    let gridCol = getComputedStyle(document.body).getPropertyValue('--plotly-grid');
+                    this.plotLayout.scene.xaxis.gridcolor = gridCol;
+                    this.plotLayout.scene.yaxis.gridcolor = gridCol;
+                    this.plotLayout.scene.zaxis.gridcolor = gridCol;
+                    this.plotCurrentTab();
+                });
+
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.activeTab = btn.dataset.tab;
+                        document.getElementById(this.activeTab).classList.add('active');
+
+                        document.getElementById('info-panel').style.display = 'none';
+                        this.plotCurrentTab();
+                    });
+                });
+
+                document.getElementById('btn-plot').addEventListener('click', () => this.plotCurrentTab());
+
+                document.getElementById('t1-add').addEventListener('click', () => this.addTab1Function());
+                document.getElementById('t1-remove').addEventListener('click', () => this.removeTab1Function());
+                document.getElementById('t1-update').addEventListener('click', () => this.updateTab1Function());
+
+                document.querySelectorAll('input[name="t1-slice"]').forEach(rad => {
+                    rad.addEventListener('change', (e) => {
+                        document.getElementById('t1-slice-xy').style.display = (e.target.value === 'x' || e.target.value === 'y') ? 'block' : 'none';
+                        document.getElementById('t1-slice-vec').style.display = (e.target.value === 'vec') ? 'block' : 'none';
+                        this.plotCurrentTab();
+                    });
+                });
+                document.querySelectorAll('input[name="t2-slice"]').forEach(rad => {
+                    rad.addEventListener('change', (e) => {
+                        document.getElementById('t2-slice-pos').style.display = ['x', 'y', 'z'].includes(e.target.value) ? 'block' : 'none';
+                        document.getElementById('t2-slice-vec').style.display = (e.target.value === 'vec') ? 'block' : 'none';
+                        this.plotCurrentTab();
+                    });
+                });
+
+                const link = (sliderId, inputId, valId = null) => {
+                    let s = document.getElementById(sliderId);
+                    let i = document.getElementById(inputId);
+                    let v = document.getElementById(valId);
+                    if (s && i) {
+                        s.addEventListener('input', () => i.value = s.value);
+                        i.addEventListener('input', () => s.value = i.value);
+                        s.addEventListener('change', () => this.plotCurrentTab());
+                        i.addEventListener('change', () => this.plotCurrentTab());
+                    }
+                    if (s && v && !i) {
+                        s.addEventListener('input', () => v.innerText = s.value);
+                    }
+                };
+                link('t1-spos', 't1-spos-in');
+                link('t2-spos', 't2-spos-in');
+                link('t1-res', null, 't1-res-val');
+                link('t2-res', null, 't2-res-val');
+
+                document.getElementById('t1-list').addEventListener('click', (e) => {
+                    if (e.target.classList.contains('list-item')) {
+                        document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        document.getElementById('t1-expr').value = this.tab1Functions[e.target.dataset.idx].expr;
+                    }
+                });
+            }
+
+            addTab1Function() {
+                let expr = document.getElementById('t1-expr').value.trim();
+                if (!expr) return;
+                try {
+                    let parsed = this.engine.parseImplicitFunction(expr);
+                    this.tab1Functions.push({ expr, func: parsed.func, implicit: parsed.isImplicit });
+                    this.renderTab1List();
+                    this.plotCurrentTab();
+                } catch (e) { alert("Parse Error: " + e.message); }
+            }
+            removeTab1Function() {
+                let sel = document.querySelector('.list-item.selected');
+                if (!sel) return;
+                this.tab1Functions.splice(sel.dataset.idx, 1);
+                this.renderTab1List();
+                this.plotCurrentTab();
+            }
+            updateTab1Function() {
+                let sel = document.querySelector('.list-item.selected');
+                if (!sel) return;
+                let expr = document.getElementById('t1-expr').value.trim();
+                try {
+                    let parsed = this.engine.parseImplicitFunction(expr);
+                    this.tab1Functions[sel.dataset.idx] = { expr, func: parsed.func, implicit: parsed.isImplicit };
+                    this.renderTab1List();
+                    this.plotCurrentTab();
+                } catch (e) { alert("Parse Error: " + e.message); }
+            }
+            renderTab1List() {
+                let lb = document.getElementById('t1-list');
+                lb.innerHTML = '';
+                this.tab1Functions.forEach((f, i) => {
+                    let d = document.createElement('div');
+                    d.className = 'list-item';
+                    d.innerText = `${i + 1}. ${f.expr}`;
+                    d.dataset.idx = i;
+                    if (i === this.tab1Functions.length - 1) d.classList.add('selected');
+                    lb.appendChild(d);
+                });
+            }
+
+            getColorscale(id) {
+                return document.getElementById(id).value;
+            }
+
+            plotCurrentTab() {
+                if (this.activeTab === 'tab1') this.plotTab1();
+                else if (this.activeTab === 'tab2') this.plotTab2();
+                else if (this.activeTab === 'tab3') this.plotTab3();
+            }
+
+            plotTab1() {
+                let xmin = parseFloat(document.getElementById('t1-xmin').value);
+                let xmax = parseFloat(document.getElementById('t1-xmax').value);
+                let ymin = parseFloat(document.getElementById('t1-ymin').value);
+                let ymax = parseFloat(document.getElementById('t1-ymax').value);
+                let res = parseInt(document.getElementById('t1-res').value);
+                let ptype = document.getElementById('t1-ptype').value;
+                let cmap = this.getColorscale('t1-cmap');
+
+                let sliceMode = document.querySelector('input[name="t1-slice"]:checked').value;
+                let showSlice = (sliceMode !== 'none');
+
+                let xVals = [], yVals = [];
+                for (let i = 0; i < res; i++) {
+                    xVals.push(xmin + (xmax - xmin) * (i / (res - 1)));
+                    yVals.push(ymin + (ymax - ymin) * (i / (res - 1)));
+                }
+
+                let traces = [];
+
+                let addFuncTrace = (fData, ax3d, ax2d) => {
+                    let zMat = [];
+                    for (let j = 0; j < res; j++) {
+                        let row = [];
+                        for (let i = 0; i < res; i++) {
+                            row.push(fData.func({ x: xVals[i], y: yVals[j] }));
+                        }
+                        zMat.push(row);
+                    }
+
+                    if (fData.implicit) {
+                        traces.push({
+                            x: xVals, y: yVals, z: zMat,
+                            type: 'contour',
+                            contours: { start: 0, end: 0, size: 0, showlines: true, coloring: 'none' },
+                            line: { color: 'red', width: 2 },
+                            name: fData.expr,
+                            scene: ax2d || 'scene', xaxis: ax2d, yaxis: ax2d
+                        });
+                        return;
+                    }
+
+                    if (ptype === 'surface' || ptype === 'combined') {
+                        traces.push({
+                            x: xVals, y: yVals, z: zMat,
+                            type: 'surface',
+                            colorscale: cmap,
+                            name: fData.expr,
+                            showscale: false,
+                            scene: ax3d || 'scene'
+                        });
+                    }
+                    if (ptype === 'contourf' || ptype === 'combined') {
+                        traces.push({
+                            x: xVals, y: yVals, z: zMat,
+                            type: 'contour', colorscale: cmap,
+                            name: fData.expr,
+                            scene: ax2d || 'scene', xaxis: ax2d, yaxis: ax2d
+                        });
+                    }
+                    if (ptype === 'contour') {
+                        traces.push({
+                            x: xVals, y: yVals, z: zMat,
+                            type: 'contour', colorscale: cmap,
+                            contours: { coloring: 'lines' },
+                            name: fData.expr,
+                            scene: ax2d || 'scene', xaxis: ax2d, yaxis: ax2d
+                        });
+                    }
+
+                    // Slice
+                    if (showSlice && !fData.implicit) {
+                        let axSlice = ptype === 'combined' ? 'x4' : 'x2';
+                        if (sliceMode === 'x') {
+                            let sX = parseFloat(document.getElementById('t1-spos').value);
+                            let zSlice = yVals.map(y => fData.func({ x: sX, y }));
+                            traces.push({
+                                x: yVals, y: zSlice, type: 'scatter', mode: 'lines',
+                                name: `${fData.expr} @x=${sX}`, xaxis: axSlice, yaxis: ptype === 'combined' ? 'y4' : 'y2'
+                            });
+                        } else if (sliceMode === 'y') {
+                            let sY = parseFloat(document.getElementById('t1-spos').value);
+                            let zSlice = xVals.map(x => fData.func({ x, y: sY }));
+                            traces.push({
+                                x: xVals, y: zSlice, type: 'scatter', mode: 'lines',
+                                name: `${fData.expr} @y=${sY}`, xaxis: axSlice, yaxis: ptype === 'combined' ? 'y4' : 'y2'
+                            });
+                        } else if (sliceMode === 'vec') {
+                            let a = parseFloat(document.getElementById('t1-ua').value);
+                            let b = parseFloat(document.getElementById('t1-ub').value);
+                            let p1 = parseFloat(document.getElementById('t1-p1').value);
+                            let p2 = parseFloat(document.getElementById('t1-p2').value);
+                            let mag = Math.hypot(a, b) || 1;
+                            a /= mag; b /= mag;
+                            let span = Math.hypot(xmax - xmin, ymax - ymin);
+                            let tVals = [], zSlice = [];
+                            for (let i = 0; i < res * 2; i++) {
+                                let t = -span + (2 * span) * (i / (res * 2 - 1));
+                                let xx = p1 + t * a;
+                                let yy = p2 + t * b;
+                                if (xx >= xmin && xx <= xmax && yy >= ymin && yy <= ymax) {
+                                    tVals.push(t);
+                                    zSlice.push(fData.func({ x: xx, y: yy }));
+                                }
+                            }
+                            traces.push({
+                                x: tVals, y: zSlice, type: 'scatter', mode: 'lines',
+                                name: `${fData.expr} along u`, xaxis: axSlice, yaxis: ptype === 'combined' ? 'y4' : 'y2'
+                            });
+                        }
+                    }
+                };
+
+                let layout = JSON.parse(JSON.stringify(this.plotLayout));
+
+                if (ptype === 'combined') {
+                    layout.grid = { rows: 2, columns: 2, pattern: 'independent' };
+                    layout.scene = { domain: { row: 0, column: 0 } };
+                    this.tab1Functions.forEach(f => addFuncTrace(f, 'scene', 'x2'));
+                } else if (showSlice) {
+                    layout.grid = { rows: 1, columns: 2, pattern: 'independent' };
+                    if (ptype === 'surface') {
+                        layout.scene = { domain: { x: [0, 0.45], y: [0, 1] } };
+                        this.tab1Functions.forEach(f => addFuncTrace(f, 'scene', null));
+                    } else {
+                        layout.xaxis = { domain: [0, 0.45] };
+                        layout.xaxis2 = { domain: [0.55, 1] };
+                        layout.yaxis = { anchor: 'x' };
+                        layout.yaxis2 = { anchor: 'x2' };
+                        this.tab1Functions.forEach(f => addFuncTrace(f, null, 'x'));
+                    }
+                } else {
+                    if (ptype === 'surface') {
+                        this.tab1Functions.forEach(f => addFuncTrace(f, 'scene', null));
+                    } else {
+                        this.tab1Functions.forEach(f => addFuncTrace(f, null, 'x'));
+                    }
+                }
+
+                Object.assign(layout.scene, this.plotLayout.scene);
+                Plotly.newPlot('plot-container', traces, layout, { responsive: true });
+            }
+
+            plotTab2() {
+                let expr = document.getElementById('t2-expr').value.trim();
+                if (!expr) return;
+
+                let parsed;
+                try {
+                    parsed = this.engine.parseImplicitFunction(expr);
+                } catch (e) { alert("Parse error: " + e.message); return; }
+
+                let lvl = parsed.isImplicit ? 0 : parseFloat(document.getElementById('t2-level').value);
+                let xmin = parseFloat(document.getElementById('t2-xmin').value); let xmax = parseFloat(document.getElementById('t2-xmax').value);
+                let ymin = parseFloat(document.getElementById('t2-ymin').value); let ymax = parseFloat(document.getElementById('t2-ymax').value);
+                let zmin = parseFloat(document.getElementById('t2-zmin').value); let zmax = parseFloat(document.getElementById('t2-zmax').value);
+                let res = parseInt(document.getElementById('t2-res').value);
+                let cmap = this.getColorscale('t2-cmap');
+                let sliceMode = document.querySelector('input[name="t2-slice"]:checked').value;
+                let showSlice = (sliceMode !== 'none');
+
+                // Generate 3D grid
+                let xVals = [], yVals = [], zVals = [];
+                for (let i = 0; i < res; i++) xVals.push(xmin + (xmax - xmin) * (i / (res - 1)));
+                for (let i = 0; i < res; i++) yVals.push(ymin + (ymax - ymin) * (i / (res - 1)));
+                for (let i = 0; i < res; i++) zVals.push(zmin + (zmax - zmin) * (i / (res - 1)));
+
+                let valMat = [], X = [], Y = [], Z = [];
+                for (let i = 0; i < res; i++) {
+                    for (let j = 0; j < res; j++) {
+                        for (let k = 0; k < res; k++) {
+                            X.push(xVals[i]);
+                            Y.push(yVals[j]);
+                            Z.push(zVals[k]);
+                            valMat.push(parsed.func({ x: xVals[i], y: yVals[j], z: zVals[k] }));
+                        }
+                    }
+                }
+
+                let traces = [];
+                // Plotly isosurface trace (built in marching cubes!)
+                traces.push({
+                    type: 'isosurface',
+                    x: X, y: Y, z: Z, value: valMat,
+                    isomin: lvl, isomax: lvl,
+                    surface: { show: true, count: 1 }, // exactly 1 surface
+                    colorscale: cmap,
+                    showscale: false
+                });
+
+                let layout = JSON.parse(JSON.stringify(this.plotLayout));
+
+                if (showSlice) {
+                    layout.grid = { rows: 1, columns: 2, pattern: 'independent' };
+                    layout.scene = { domain: { x: [0, 0.45], y: [0, 1] } };
+                    layout.xaxis2 = { domain: [0.55, 1] };
+                    layout.yaxis2 = { anchor: 'x2' };
+
+                    let sPos = parseFloat(document.getElementById('t2-spos').value);
+                    if (sliceMode === 'x' || sliceMode === 'y' || sliceMode === 'z') {
+                        let A, B, gridA, gridB;
+                        if (sliceMode === 'x') { A = yVals; B = zVals; }
+                        if (sliceMode === 'y') { A = xVals; B = zVals; }
+                        if (sliceMode === 'z') { A = xVals; B = yVals; }
+                        let sZ = [];
+                        for (let b = 0; b < res; b++) {
+                            let row = [];
+                            for (let a = 0; a < res; a++) {
+                                if (sliceMode === 'x') row.push(parsed.func({ x: sPos, y: A[a], z: B[b] }));
+                                if (sliceMode === 'y') row.push(parsed.func({ x: A[a], y: sPos, z: B[b] }));
+                                if (sliceMode === 'z') row.push(parsed.func({ x: A[a], y: B[b], z: sPos }));
+                            }
+                            sZ.push(row);
+                        }
+                        traces.push({
+                            x: A, y: B, z: sZ,
+                            type: 'contour', colorscale: cmap,
+                            xaxis: 'x2', yaxis: 'y2',
+                            contours: { coloring: 'heatmap' }
+                        });
+                        traces.push({
+                            x: A, y: B, z: sZ,
+                            type: 'contour',
+                            contours: { start: lvl, end: lvl, size: 0, showlines: true, coloring: 'none' },
+                            line: { color: 'red', width: 2 },
+                            xaxis: 'x2', yaxis: 'y2'
+                        });
+                    } else if (sliceMode === 'vec') {
+                        let ux = parseFloat(document.getElementById('t2-ua').value);
+                        let uy = parseFloat(document.getElementById('t2-ub').value);
+                        let uz = parseFloat(document.getElementById('t2-uc').value);
+                        let px = parseFloat(document.getElementById('t2-p1').value);
+                        let py = parseFloat(document.getElementById('t2-p2').value);
+                        let pz = parseFloat(document.getElementById('t2-p3').value);
+
+                        let norm = Math.hypot(ux, uy, uz) || 1;
+                        let n = [ux / norm, uy / norm, uz / norm];
+
+                        let t = Math.abs(n[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+                        let dot = t[0] * n[0] + t[1] * n[1] + t[2] * n[2];
+                        let e1_raw = [t[0] - dot * n[0], t[1] - dot * n[1], t[2] - dot * n[2]];
+                        let e1_norm = Math.hypot(e1_raw[0], e1_raw[1], e1_raw[2]);
+                        let e1 = [e1_raw[0] / e1_norm, e1_raw[1] / e1_norm, e1_raw[2] / e1_norm];
+                        let e2 = [
+                            n[1] * e1[2] - n[2] * e1[1],
+                            n[2] * e1[0] - n[0] * e1[2],
+                            n[0] * e1[1] - n[1] * e1[0]
+                        ];
+
+                        let span = Math.hypot(xmax - xmin, Math.hypot(ymax - ymin, zmax - zmin));
+                        let sVals = [], tVals = [];
+                        for (let i = 0; i < res; i++) {
+                            sVals.push(-span + (2 * span) * (i / (res - 1)));
+                            tVals.push(-span + (2 * span) * (i / (res - 1)));
+                        }
+
+                        let sZ = [];
+                        for (let j = 0; j < res; j++) {
+                            let row = [];
+                            for (let i = 0; i < res; i++) {
+                                let x = px + sVals[i] * e1[0] + tVals[j] * e2[0];
+                                let y = py + sVals[i] * e1[1] + tVals[j] * e2[1];
+                                let z = pz + sVals[i] * e1[2] + tVals[j] * e2[2];
+                                row.push(parsed.func({ x, y, z }));
+                            }
+                            sZ.push(row);
+                        }
+                        traces.push({
+                            x: sVals, y: tVals, z: sZ,
+                            type: 'contour', colorscale: cmap,
+                            xaxis: 'x2', yaxis: 'y2',
+                            contours: { coloring: 'heatmap' }
+                        });
+                        traces.push({
+                            x: sVals, y: tVals, z: sZ,
+                            type: 'contour',
+                            contours: { start: lvl, end: lvl, size: 0, showlines: true, coloring: 'none' },
+                            line: { color: 'red', width: 2 },
+                            xaxis: 'x2', yaxis: 'y2'
+                        });
+                    }
+                }
+
+                Object.assign(layout.scene, this.plotLayout.scene);
+                Plotly.newPlot('plot-container', traces, layout, { responsive: true });
+            }
+
+            plotTab3() {
+                let expr = document.getElementById('t3-expr').value.trim();
+                if (!expr) return;
+
+                let parsed;
+                try {
+                    parsed = this.engine.parseImplicitFunction(expr);
+                } catch (e) { alert("Parse error: " + e.message); return; }
+
+                let x0 = parseFloat(document.getElementById('t3-x0').value);
+                let y0 = parseFloat(document.getElementById('t3-y0').value);
+                let xmin = parseFloat(document.getElementById('t3-xmin').value);
+                let xmax = parseFloat(document.getElementById('t3-xmax').value);
+                let ymin = parseFloat(document.getElementById('t3-ymin').value);
+                let ymax = parseFloat(document.getElementById('t3-ymax').value);
+
+                let dx = parseFloat(document.getElementById('t3-dx').value);
+                let dy = parseFloat(document.getElementById('t3-dy').value);
+                let angStr = document.getElementById('t3-ang').value.trim();
+                if (angStr) {
+                    let ang = parseFloat(angStr) * Math.PI / 180;
+                    dx = Math.cos(ang);
+                    dy = Math.sin(ang);
+                }
+
+                let showField = document.getElementById('t3-show-field').checked;
+                let showGrad = document.getElementById('t3-show-grad').checked;
+                let showCrit = document.getElementById('t3-show-crit').checked;
+                let cmap = this.getColorscale('t3-cmap');
+
+                let res = 80;
+                let xVals = [], yVals = [];
+                for (let i = 0; i < res; i++) xVals.push(xmin + (xmax - xmin) * (i / (res - 1)));
+                for (let i = 0; i < res; i++) yVals.push(ymin + (ymax - ymin) * (i / (res - 1)));
+
+                let zMat = [];
+                for (let j = 0; j < res; j++) {
+                    let row = [];
+                    for (let i = 0; i < res; i++) {
+                        row.push(parsed.func({ x: xVals[i], y: yVals[j] }));
+                    }
+                    zMat.push(row);
+                }
+
+                let traces = [];
+                traces.push({
+                    x: xVals, y: yVals, z: zMat,
+                    type: 'contour', colorscale: cmap,
+                    contours: { coloring: 'heatmap' },
+                    name: expr
+                });
+
+                if (parsed.isImplicit) {
+                    traces.push({
+                        x: xVals, y: yVals, z: zMat,
+                        type: 'contour',
+                        contours: { start: 0, end: 0, size: 0, showlines: true, coloring: 'none' },
+                        line: { color: 'red', width: 2 },
+                        name: 'Implicit Curve'
+                    });
+                }
+
+                // Vectors using plotly annotations
+                let layout = JSON.parse(JSON.stringify(this.plotLayout));
+                layout.annotations = [];
+
+                if (showField) {
+                    // Subsamp for field
+                    let skip = 8;
+                    for (let j = 0; j < res; j += skip) {
+                        for (let i = 0; i < res; i += skip) {
+                            let px = xVals[i];
+                            let py = yVals[j];
+                            let g = this.engine.numericalGradientScalar(parsed.func, px, py);
+                            let mag = Math.hypot(g[0], g[1]);
+                            if (mag > 1e-6) {
+                                let scale = (xmax - xmin) / 15 / mag;
+                                layout.annotations.push({
+                                    x: px + g[0] * scale, y: py + g[1] * scale,
+                                    ax: px, ay: py,
+                                    xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
+                                    showarrow: true, arrowcolor: 'orange', arrowhead: 2, arrowsize: 1.5, arrowwidth: 1
+                                });
+                            }
+                        }
+                    }
+                }
+
+                if (showGrad) {
+                    let g = this.engine.numericalGradientScalar(parsed.func, x0, y0);
+                    let mag = Math.hypot(g[0], g[1]);
+                    if (mag > 1e-6) {
+                        let scale = (xmax - xmin) / 10 / mag;
+                        layout.annotations.push({
+                            x: x0 + g[0] * scale, y: y0 + g[1] * scale,
+                            ax: x0, ay: y0,
+                            xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
+                            showarrow: true, arrowcolor: '#00ff00', arrowhead: 3, arrowsize: 2, arrowwidth: 3
+                        });
+                        // Text label
+                        layout.annotations.push({
+                            x: x0, y: y0,
+                            xref: 'x', yref: 'y',
+                            text: `∇f=(${g[0].toFixed(2)},${g[1].toFixed(2)})`,
+                            showarrow: false,
+                            xanchor: 'left', yanchor: 'bottom', xshift: 10, yshift: 10,
+                            font: { color: 'white', size: 10 },
+                            bgcolor: 'rgba(0,0,0,0.7)', borderpad: 3
+                        });
+                    }
+
+                    // Directional Derivative
+                    let uMag = Math.hypot(dx, dy) || 1;
+                    let ux = dx / uMag, uy = dy / uMag;
+                    let scale = (xmax - xmin) / 12;
+                    layout.annotations.push({
+                        x: x0 + ux * scale, y: y0 + uy * scale,
+                        ax: x0, ay: y0,
+                        xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
+                        showarrow: true, arrowcolor: 'cyan', arrowhead: 2, arrowsize: 2, arrowwidth: 2
+                    });
+                }
+
+                let critInfo = [];
+                if (showCrit) {
+                    let cps = this.engine.findCriticalPoints(parsed.func, xmin, xmax, ymin, ymax, 25);
+                    let colors = { 'local_min': '#00ff00', 'local_max': '#ff3333', 'saddle': '#ffcc00', 'inconclusive': '#aaaaaa' };
+                    let symbols = { 'local_min': 'circle', 'local_max': 'triangle-up', 'saddle': 'diamond', 'inconclusive': 'square' };
+                    let cx = [], cy = [], ccol = [], csym = [];
+                    cps.forEach(cp => {
+                        cx.push(cp.x); cy.push(cp.y);
+                        ccol.push(colors[cp.type] || '#aaaaaa');
+                        csym.push(symbols[cp.type] || 'square');
+
+                        layout.annotations.push({
+                            x: cp.x, y: cp.y,
+                            xref: 'x', yref: 'y',
+                            text: `${cp.type}\n(${cp.x.toFixed(2)}, ${cp.y.toFixed(2)})\nf=${cp.z.toFixed(2)}`,
+                            showarrow: false,
+                            xanchor: 'left', yanchor: 'bottom', xshift: 10, yshift: 10,
+                            font: { color: 'white', size: 9 },
+                            bgcolor: 'rgba(0,0,0,0.7)', borderpad: 2
+                        });
+                    });
+                    if (cx.length > 0) {
+                        traces.push({
+                            x: cx, y: cy, mode: 'markers', type: 'scatter',
+                            marker: { color: ccol, symbol: csym, size: 12, line: { color: 'black', width: 2 } },
+                            name: 'Critical Points'
+                        });
+                    }
+                    critInfo = cps;
+                }
+
+                Plotly.newPlot('plot-container', traces, layout, { responsive: true });
+
+                // Update Info Panel
+                let panel = document.getElementById('info-panel');
+                let txt = document.getElementById('info-text');
+
+                let fv = parsed.func({ x: x0, y: y0 });
+                let g = this.engine.numericalGradientScalar(parsed.func, x0, y0);
+                let du = this.engine.directionalDerivative(parsed.func, x0, y0, dx, dy);
+                let magG = Math.hypot(g[0], g[1]);
+
+                let infoStr = `f(${x0}, ${y0}) = ${fv.toFixed(6)}\n` +
+                    `∇f(${x0}, ${y0}) = (${g[0].toFixed(6)}, ${g[1].toFixed(6)})\n` +
+                    `|∇f| = ${magG.toFixed(6)}\n` +
+                    `Dir u = (${dx.toFixed(4)}, ${dy.toFixed(4)})\n` +
+                    `D_u f(${x0}, ${y0}) = ${du.toFixed(6)}\n`;
+
+                if (critInfo.length > 0) {
+                    infoStr += `\n── Critical Points ──\n`;
+                    critInfo.forEach(cp => {
+                        infoStr += `  (${cp.x.toFixed(4)}, ${cp.y.toFixed(4)}) f=${cp.z.toFixed(4)} [${cp.type}]\n`;
+                    });
+                }
+
+                txt.innerText = infoStr;
+                panel.style.display = 'block';
+            }
+
+        }
+
+        window.onload = () => { window.app = new App(); };
+    </script>
+</body>
+
+</html>
